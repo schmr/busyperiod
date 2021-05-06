@@ -241,8 +241,8 @@ func TestScaling(t *testing.T) {
 		d := CreateRandomDualCritMin()
 		ok := d.ScaleTasksetEDFNUVD()
 		if ok && ((d[0].Scale > 1) || (d[0].Scale < 0) ||
-		          (d[1].Scale > 1) || (d[1].Scale < 0) ||
-		          (d[2].Scale > 1) || (d[2].Scale < 0) ){
+			(d[1].Scale > 1) || (d[1].Scale < 0) ||
+			(d[2].Scale > 1) || (d[2].Scale < 0)) {
 			t.Errorf("random taskset scaling failed:\n%v", d)
 		}
 	}

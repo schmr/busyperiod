@@ -218,7 +218,7 @@ func (d DualCritMin) ScaleTasksetEDFNUVD() bool {
 		return false
 	}
 	scaleformula := func(l, uh, ul float64) float64 {
-		return 1.0 / (1 + l * math.Sqrt(uh / ul))
+		return 1.0 / (1 + l*math.Sqrt(uh/ul))
 	}
 	for i, v := range d {
 		if v.IsHigh() {
@@ -236,32 +236,37 @@ func (d DualCritMin) ScaleTasksetEDFNUVD() bool {
 func CreateRandomDualCritMin() DualCritMin {
 	var d DualCritMin
 	var tl, th1, th2 Task
+	var cl, ch, period float64
 
-	cl := 1 + rand.Intn(10)
-	period := float64(cl + rand.Intn(10))
-	tl.CompLow = float64(cl)
+	gen := func() (period, ch, cl float64) {
+		for (ch == 0) || (cl == 0) { // avoid zero cl or ch
+			period = float64(1 + rand.Intn(20))
+			ch = float64(int(rand.Float64() * period))
+			cl = float64(int(rand.Float64() * ch))
+		}
+		return period, ch, cl
+	}
+
+	period, _, cl = gen()
+	tl.CompLow = cl
 	tl.Period = period
 	tl.Deadline = period
 	d[0] = tl
 
-	cl = 1 + rand.Intn(10)
-	period = float64(1 + cl + rand.Intn(10))
-	ch := float64(1 + cl)
-	th1.CompLow = float64(cl)
+	period, ch, cl = gen()
+	th1.CompLow = cl
 	th1.CompHigh = ch
 	th1.Period = period
 	th1.Deadline = period
-	th1.Scale = 1.0
+	th1.Scale = 1.0 // get recognized as high crit task
 	d[1] = th1
 
-	cl = 1 + rand.Intn(10)
-	period = float64(1 + cl + rand.Intn(10))
-	ch = float64(1 + cl)
-	th2.CompLow = float64(cl)
+	period, ch, cl = gen()
+	th2.CompLow = cl
 	th2.CompHigh = ch
 	th2.Period = period
 	th2.Deadline = period
-	th2.Scale = 1.0
+	th2.Scale = 1.0 // get recognized as high crit task
 	d[2] = th2
 
 	return d
