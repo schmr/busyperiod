@@ -1,3 +1,4 @@
+// Package taskset models computations with real-time constraints for schedulability checks.
 package taskset
 
 import (
@@ -26,6 +27,7 @@ type DualCritMin [3]Task
 
 const float64EqualityThreshold = 1e-9
 
+// Is this best practice?
 // https://stackoverflow.com/a/47969546
 func almostEqual(a, b float64) bool {
 	return math.Abs(a-b) <= float64EqualityThreshold
