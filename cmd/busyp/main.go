@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"flag"
 
 	"github.com/schmr/busyperiod/taskset"
 )
@@ -14,22 +15,14 @@ var revisiondate string
 var revision string
 
 func main() {
-	// Maybe there is a package for this I am not aware of?
-	for _, arg := range os.Args[1:] {
-		switch arg {
-		case "-v":
-			fmt.Println("busyp", revision, revisiondate)
-			os.Exit(0)
-		case "-h":
-			fmt.Println("busyp [-v] [-h]")
-			fmt.Println("\t-v Show version information")
-			fmt.Println("\t-h Show this help")
-			os.Exit(0)
-		default:
-			fmt.Println("Ignoring unknown argument.")
-		}
+	var tries = flag.Int("n", 100000, "number of attempts to find a counterexample")
+	var showversion = flag.Bool("v", false, "show version information and exit")
+	flag.Parse()
+
+	if *showversion {
+		fmt.Println("busyp", revision, revisiondate)
+		os.Exit(0)
 	}
-	tries := 100000
 
 	type violator struct {
 		TaskSet taskset.DualCritMin
@@ -38,11 +31,10 @@ func main() {
 	}
 	violators := make(chan violator)
 	var wg sync.WaitGroup
-	for i := 0; i < tries; i++ {
+	for i := 0; i < *tries; i++ {
 		wg.Add(1)
-		go func(id int) {
+		go func() {
 			defer wg.Done()
-			fmt.Printf(" %d ", id)
 			// Generator
 			d := taskset.CreateRandomDualCritMin()
 			// EDF-NUVD check and scaling
@@ -57,7 +49,7 @@ func main() {
 			}
 			for _, t := range checkpoints {
 				w := taskset.WorkBound(&d, float64(t))
-				if w > float64(t) {
+				if w > float64(t) { // found counterexample
 					var vr violator
 					vr.TaskSet = d
 					vr.Checkpoints = checkpoints
@@ -65,16 +57,29 @@ func main() {
 					violators <- vr
 				}
 			}
-			fmt.Printf(" %d(E) ", id)
-		}(i)
+		}()
 	}
 
-	// wait for all to finish; rewrite to end program on first found counterexample
+	// check in parallel if we already have a result and print it
+	// don't want to wait for all goroutines to finish prior to printing
+	// don't track in WaitGroup wg, if no counterexample is found this
+	// routine never returns and would stall the WaitGroup
+	go func() {
+		var first violator
+		// unbuffered channel waits until receive completes?
+		first = <-violators
+		fmt.Printf("\ntaskset not EDF schedulable according to busy period check:\n%v\n", first.TaskSet)
+		fmt.Printf("checkpoints: %v\n", first.Checkpoints)
+		fmt.Printf("checked t: %v\n", first.ViolatedAt)
+	}()
+
+	// wait for all to finish
 	go func() {
 		wg.Wait()
 		close(violators)
 	}()
 
+	// drain the channel; might include further counterexamples
 	fmt.Print("\n")
 	for v := range violators {
 		fmt.Printf("\ntaskset not EDF schedulable according to busy period check:\n%v\n", v.TaskSet)
