@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+## [0.3.2] - 2021-05-06
+### Changed
+- Use workerpool instead of spawning endless goroutines
+
 ## [0.3.1] - 2021-05-06
 ### Added
 - Makefile to build `busyp` with revision information

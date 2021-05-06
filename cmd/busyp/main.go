@@ -4,10 +4,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"sync"
 	"flag"
+	"runtime"
 
 	"github.com/schmr/busyperiod/taskset"
+	"github.com/gammazero/workerpool"
 )
 
 // set by linker
@@ -24,17 +25,17 @@ func main() {
 		os.Exit(0)
 	}
 
+	numWorkers := runtime.NumCPU()
+	wp := workerpool.New(numWorkers)
+
 	type violator struct {
 		TaskSet taskset.DualCritMin
 		Checkpoints []int
 		ViolatedAt int
 	}
-	violators := make(chan violator)
-	var wg sync.WaitGroup
+	violators := make(chan violator, numWorkers)
 	for i := 0; i < *tries; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wp.Submit(func() {
 			// Generator
 			d := taskset.CreateRandomDualCritMin()
 			// EDF-NUVD check and scaling
@@ -57,7 +58,7 @@ func main() {
 					violators <- vr
 				}
 			}
-		}()
+		})
 	}
 
 	// check in parallel if we already have a result and print it
@@ -65,25 +66,12 @@ func main() {
 	// don't track in WaitGroup wg, if no counterexample is found this
 	// routine never returns and would stall the WaitGroup
 	go func() {
-		var first violator
-		// unbuffered channel waits until receive completes?
-		first = <-violators
-		fmt.Printf("\ntaskset not EDF schedulable according to busy period check:\n%v\n", first.TaskSet)
-		fmt.Printf("checkpoints: %v\n", first.Checkpoints)
-		fmt.Printf("checked t: %v\n", first.ViolatedAt)
+		for v := range violators {
+			fmt.Printf("\ntaskset not EDF schedulable according to busy period check:\n%v\n", v.TaskSet)
+			fmt.Printf("checkpoints: %v\n", v.Checkpoints)
+			fmt.Printf("checked t: %v\n", v.ViolatedAt)
+		}
 	}()
 
-	// wait for all to finish
-	go func() {
-		wg.Wait()
-		close(violators)
-	}()
-
-	// drain the channel; might include further counterexamples
-	fmt.Print("\n")
-	for v := range violators {
-		fmt.Printf("\ntaskset not EDF schedulable according to busy period check:\n%v\n", v.TaskSet)
-		fmt.Printf("checkpoints: %v\n", v.Checkpoints)
-		fmt.Printf("checked t: %v\n", v.ViolatedAt)
-	}
+	wp.StopWait()
 }
