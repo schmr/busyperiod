@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+## [0.3.1] - 2021-05-06
+### Changed
+- Introduced concurrency in `busyp`
+- Use flag package for command line arguments
+
 ## [0.2.1] - 2021-05-06
 ### Added
 - [Changelog](./CHANGELOG.md) for humans
