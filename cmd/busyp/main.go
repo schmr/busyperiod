@@ -6,14 +6,16 @@ import (
 	"os"
 	"flag"
 	"runtime"
+	"math/rand"
+	"time"
 
 	"github.com/schmr/busyperiod/taskset"
 	"github.com/gammazero/workerpool"
 )
 
 // set by linker
-var revisiondate string
-var revision string
+var revisiondate string = "unknown"
+var revision string = "unknown"
 
 func main() {
 	var tries = flag.Int("n", 100000, "number of attempts to find a counterexample")
@@ -25,6 +27,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	rand.Seed(time.Now().UnixNano())
 	numWorkers := runtime.NumCPU()
 	wp := workerpool.New(numWorkers)
 
