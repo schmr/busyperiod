@@ -43,6 +43,7 @@ func main() {
 	// Don't track in WaitGroup or run in workerpool, if no counterexample
 	// is found this routine never returns and would stall the program.
 	go func() {
+		counterexample := 0
 		for {
 			v, ok := <-violators
 			if !ok {
@@ -51,6 +52,8 @@ func main() {
 			fmt.Printf("\ntaskset not EDF schedulable according to busy period check:\n%v\n", v.TaskSet)
 			fmt.Printf("checkpoints: %v\n", v.Checkpoints)
 			fmt.Printf("checked t: %v\n", v.ViolatedAt)
+			storeCounterExample(v, counterexample)
+			counterexample++
 		}
 	}()
 
@@ -96,4 +99,17 @@ func searchCounterExample(out chan<- violator) {
 			out <- vr
 		}
 	}
+}
+
+func storeCounterExample(v violator, id int) {
+	filename := fmt.Sprintf("counterexample-busyp-%d.txt", id)
+	f, err := os.Open(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "busyp: %v\n", err)
+		return
+	}
+	defer f.Close()
+	fmt.Fprintf(f, "\ntaskset not EDF schedulable according to busy period check:\n%v\n", v.TaskSet)
+	fmt.Fprintf(f, "checkpoints: %v\n", v.Checkpoints)
+	fmt.Fprintf(f, "checked t: %v\n", v.ViolatedAt)
 }
