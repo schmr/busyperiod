@@ -228,6 +228,26 @@ func TestOptimisticSchedulable(t *testing.T) {
 	}
 }
 
+func TestOptimisticLambda(t *testing.T) {
+	// Example from SS01 paper
+	d := DualCritMin{
+		Task{CompLow: 749.0, Period: 1000.0, Deadline: 1000.0},
+		Task{CompLow: 1.0, CompHigh: 1.0, Period: 8.0, Deadline: 8.0, Scale: 1.0},
+		Task{CompLow: 1.0, CompHigh: 625.0, Period: 1000.0, Deadline: 1000.0, Scale: 1.0},
+	}
+	ll, lh, ok := CalculateOptimisticLambda(&d)
+	want := true
+
+	if ok != want {
+		t.Errorf("got %t want %t", ok, want)
+	}
+	wantll := 0.0664361489191
+	wantlh := 5.00400480641
+	if !almostEqual(wantll, ll) || !almostEqual(wantlh, lh) {
+		t.Errorf("got [%g, %g] want [%g, %g]", ll, lh, wantll, wantlh)
+	}
+}
+
 func TestRandomDualCritMin(t *testing.T) {
 	for k := 0; k < 100; k++ {
 		d := CreateRandomDualCritMin()
