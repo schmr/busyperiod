@@ -82,7 +82,7 @@ func searchCounterExample(out chan<- violator, optimistic bool) {
 	d := taskset.CreateRandomDualCritMin()
 	var ok bool
 	if optimistic {
-	// Optimistic variant check and scaling
+		// Optimistic variant check and scaling
 		ok = d.ScaleTasksetOptimistic()
 	} else {
 		// EDF-NUVD check and scaling
