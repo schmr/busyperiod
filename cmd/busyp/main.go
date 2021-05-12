@@ -26,6 +26,7 @@ type violator struct {
 func main() {
 	var tries = flag.Int("n", 100000, "number of attempts to find a counterexample or zero for endless search")
 	var showversion = flag.Bool("v", false, "show version information and exit")
+	var optimistic = flag.Bool("o", false, "use optimistic variant instead of plain EDF-NUVD")
 	flag.Parse()
 
 	if *showversion {
@@ -61,13 +62,13 @@ func main() {
 	if *tries > 0 {
 		for i := 0; i < *tries; i++ {
 			wp.Submit(func() {
-				searchCounterExample(violators)
+				searchCounterExample(violators, *optimistic)
 			})
 		}
 	} else { // endless generation
 		for {
 			wp.Submit(func() {
-				searchCounterExample(violators)
+				searchCounterExample(violators, *optimistic)
 			})
 		}
 	}
@@ -76,11 +77,17 @@ func main() {
 }
 
 // a complete chain to discover a counterexample
-func searchCounterExample(out chan<- violator) {
+func searchCounterExample(out chan<- violator, optimistic bool) {
 	// Generator
 	d := taskset.CreateRandomDualCritMin()
-	// EDF-NUVD check and scaling
-	ok := d.ScaleTasksetEDFNUVD()
+	var ok bool
+	if optimistic {
+	// Optimistic variant check and scaling
+		ok = d.ScaleTasksetOptimistic()
+	} else {
+		// EDF-NUVD check and scaling
+		ok = d.ScaleTasksetEDFNUVD()
+	}
 	if !ok {
 		return
 	}

@@ -232,6 +232,59 @@ func (d DualCritMin) ScaleTasksetEDFNUVD() bool {
 	return true
 }
 
+// CalculateOptimisticLambda tries to calculate an intermediate result
+// required to calculate virtual deadline scales under a too optimistic variant of EDF-NUVD.
+// Success implies that the task set is schedulable under the too optimistic variant.
+func CalculateOptimisticLambda(d *DualCritMin) (float64, float64, bool) {
+	var s12 float64
+	var uhh float64 // utilization of all high tasks in high mode
+	var uhl float64 // utilization of all high tasks in low mode
+	var ull float64 // utilization of all low tasks in low mode
+	for _, v := range *d {
+		if v.IsHigh() {
+			ul := v.LowUtilization()
+			uh, _ := v.HighUtilization()
+			s12 += math.Sqrt(ul * (uh - ul))
+			uhh += uh
+			uhl += ul
+		}
+	}
+	for _, v := range *d {
+		if !v.IsHigh() {
+			ull += v.LowUtilization()
+		}
+	}
+	if (1-uhh+uhl == 0.0) || (s12 == 0.0) {
+		// would results in divide by zero
+		return math.NaN(), math.NaN(), false
+	}
+	lowlamb := s12 / (1.0 - uhh + uhl)
+	hilamb := (1.0 - ull - uhl) / s12
+	if lowlamb > hilamb {
+		return math.NaN(), math.NaN(), false
+	}
+	return lowlamb, hilamb, true
+}
+
+// ScaleTasksetOptimistic calculates and updates the taskset's scales according to the optimistic variant of EDF-NUVD.
+func (d DualCritMin) ScaleTasksetOptimistic() bool {
+	ll, _, ok := CalculateOptimisticLambda(&d)
+	if !ok {
+		return false
+	}
+	scaleformula := func(l, uh, ul float64) float64 {
+		return 1.0 / (1 + l*math.Sqrt(uh/ul-1))
+	}
+	for i, v := range d {
+		if v.IsHigh() {
+			ul := v.LowUtilization()
+			uh, _ := v.HighUtilization()
+			d[i].Scale = scaleformula(ll, uh, ul)
+		}
+	}
+	return true
+}
+
 // CreateRandomDualCritMin creates a random implicit deadline dual criticality task set
 // of one low criticality task and two high criticality tasks:
 // forall task CompLow <= CompHigh <= Deadline = Period

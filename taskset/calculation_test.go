@@ -213,6 +213,21 @@ func TestEDFNUVDSchedulable(t *testing.T) {
 	}
 }
 
+func TestOptimisticSchedulable(t *testing.T) {
+	d := DualCritMin{
+		Task{CompLow: 1.0, Period: 5.0, Deadline: 5.0},
+		Task{CompLow: 1.0, CompHigh: 2.0, Period: 5.0, Deadline: 5.0, Scale: 1.0},
+		Task{CompLow: 1.0, CompHigh: 2.0, Period: 10.0, Deadline: 10.0, Scale: 1.0},
+	}
+	_, _, got := CalculateOptimisticLambda(&d)
+	want := true
+	// Taskset schedulable with EDF-NUVD from other test has to be schedulable by more optimistic variant.
+
+	if got != want {
+		t.Errorf("got %t want %t", got, want)
+	}
+}
+
 func TestRandomDualCritMin(t *testing.T) {
 	for k := 0; k < 100; k++ {
 		d := CreateRandomDualCritMin()
