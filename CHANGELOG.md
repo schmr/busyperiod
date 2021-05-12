@@ -6,12 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Optimistic variant of EDF-NUVD
 ### Changed
 ### Deprecated
 ### Removed
 ### Fixed
 ### Security
+
+## [0.4.0] - 2021-05-12
+### Added
+- Optimistic variant of EDF-NUVD
 
 ## [0.3.3] - 2021-05-07
 ### Added
